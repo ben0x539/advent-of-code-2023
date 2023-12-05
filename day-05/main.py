@@ -41,32 +41,32 @@ def run(input_file):
     print(locations[0])
 
     locations = []
-    for val_range in ranged_seeds:
+    #for val_range in ranged_seeds:
         #print("seed ", val_range)
-        ranges = [val_range]
-        for current_map in maps:
-            #print("  current ranges ", ranges)
-            mapped_ranges = []
-            for (s2, e2, o) in current_map:
-                #print("  map ", s2, e2, o)
-                leftover = []
-                for (s1, e1) in ranges:
-                    #print("    range ", s1, e1)
-                    (s, e) = (max(s1, s2) + o, min(e1, e2) + o)
+    ranges = ranged_seeds
+    for current_map in maps:
+        #print("  current ranges ", ranges)
+        mapped_ranges = []
+        for (s2, e2, o) in current_map:
+            #print("  map ", s2, e2, o)
+            leftover = []
+            for (s1, e1) in ranges:
+                #print("    range ", s1, e1)
+                (s, e) = (max(s1, s2) + o, min(e1, e2) + o)
+                if s < e:
+                    mapped_ranges.append((s, e))
+                not_mapped = [
+                    (s1, min(e1, s2)),
+                    (max(s1, e2), e1),
+                ]
+                for (s, e) in not_mapped:
                     if s < e:
-                        mapped_ranges.append((s, e))
-                    not_mapped = [
-                        (s1, min(e1, s2)),
-                        (max(s1, e2), e1),
-                    ]
-                    for (s, e) in not_mapped:
-                        if s < e:
-                            leftover.append((s, e))
-                ranges = leftover
-            ranges.extend(mapped_ranges)
-        #print("  final ", ranges)
-        ranges.sort()
-        locations.append(ranges[0])
+                        leftover.append((s, e))
+            ranges = leftover
+        ranges.extend(mapped_ranges)
+    #print("  final ", ranges)
+    ranges.sort()
+    locations.append(ranges[0])
     locations.sort()
     print(locations[0][0])
 
