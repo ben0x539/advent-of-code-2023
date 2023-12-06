@@ -24,7 +24,7 @@ def run(input_file):
 
 today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')[2]
 run(f"../inputs/sample-{today}.txt")
-run(f"../inputs/{today}-input.txt")
+run(f"../inputs/input-{today}.txt")
 
 #d = t * (e - t)
 #d > r

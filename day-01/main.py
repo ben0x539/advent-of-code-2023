@@ -8,7 +8,7 @@ digit_words = [
     "seven", "eight", "nine",
 ]
 
-with open("../inputs/day-01-input.txt", "r", encoding="utf-8") as f:
+with open("../inputs/input-day-01.txt", "r", encoding="utf-8") as f:
     for line in f:
         first, last = None, None
         replaced_line = ""

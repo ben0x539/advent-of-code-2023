@@ -45,7 +45,7 @@ pieces = Hand(12, 13, 14)
 id_sum = 0
 power_sum = 0
 #with open("../inputs/sample-day-02.txt", "r", encoding="utf-8") as f:
-with open("../inputs/day-02-input.txt", "r", encoding="utf-8") as f:
+with open("../inputs/input-day-02.txt", "r", encoding="utf-8") as f:
     for line in f:
         game = parse_game(line)
         min_hand = get_min_hand(game)

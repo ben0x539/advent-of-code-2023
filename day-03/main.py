@@ -3,7 +3,7 @@ def issymbol(c: str):
 
 lines = None
 #with open("../inputs/sample-day-03.txt") as f:
-with open("../inputs/day-03-input.txt") as f:
+with open("../inputs/input-day-03.txt") as f:
     lines = f.readlines()
 
 adjacent_coords = [
