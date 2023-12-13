@@ -25,15 +25,11 @@ def run(input_file):
     with open(input_file, "r", encoding="utf-8") as f:
         patterns = [pattern.split() for pattern in f.read().split("\n\n")]
 
-    vertical_axes = []
-    horizontal_axes = []
-    post_smudge_vertical_axes = []
-    post_smudge_horizontal_axes = []
+    total = 0
+    total_smudge = 0
     for pattern in patterns:
-        pattern_post_smudge_vertical_axes = []
-        pattern_post_smudge_horizontal_axes = []
-
-        for (f, a, s_a) in [(lambda x: x, vertical_axes, pattern_post_smudge_vertical_axes), (Transposed, horizontal_axes, pattern_post_smudge_horizontal_axes)]:
+        smudge_done = False
+        for (f, mult) in [(lambda x: x, 1), (Transposed, 100)]:
             p = f(pattern)
             for j in range(1, len(p[0])):
                 errs = 0
@@ -43,22 +39,14 @@ def run(input_file):
                     for x in range(w):
                         if row[j-1-x] != row[j+x]:
                             errs += 1
-                            if errs >= 2:
-                                break
                 if errs == 0:
-                    a.append(j)
-                elif errs == 1:
-                    s_a.append(j)
+                    total += j * mult
+                elif errs == 1 and not smudge_done:
+                    smudge_done = True
+                    total_smudge += j * mult
 
-        if len(pattern_post_smudge_vertical_axes) > 0:
-            post_smudge_vertical_axes.append(pattern_post_smudge_vertical_axes[0])
-        elif len(pattern_post_smudge_horizontal_axes) > 0:
-            post_smudge_horizontal_axes.append(pattern_post_smudge_horizontal_axes[0])
-
-    print(sum(vertical_axes) + sum(horizontal_axes)*100)
-    print(sum(post_smudge_vertical_axes) + sum(post_smudge_horizontal_axes)*100)
-
-
+    print(total)
+    print(total_smudge)
 
 today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')[2]
 #run(f"../inputs/custom-{today}.txt")
