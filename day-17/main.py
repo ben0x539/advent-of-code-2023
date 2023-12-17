@@ -1,9 +1,6 @@
 import os
+import time
 from heapq import *
-
-#def graphify(grid):
-#    # (i,j) -> {(d, n) -> node}
-#    nodes = {}
 
 vecs = [
     (-1,  0),
@@ -19,7 +16,6 @@ def dist(grid, pos, end):
 def reconstruct_path(came_from, current):
     total_path = [current]
     while True:
-        print(current, came_from.get(current))
         current = came_from.get(current)
         if current is None:
             break
@@ -28,41 +24,44 @@ def reconstruct_path(came_from, current):
 
 def astar(grid, start, end):
     w, h = len(grid[0]), len(grid)
-    #dist(grid, start, end), 
+    cf = dist(grid, start, end)
     current = (start, 2, 0)
-    #open_set = [current]
-    open_set = set([current])
+    open_set = set([(cf, current)])
+    kill_set = set()
+    open_heap = [(cf, current)]
     came_from = {}
     g_score = {}
     g_score[current] = 0
     f_score = {}
-    f_score[current] = dist(grid, start, end)
+    f_score[current] = cf
 
     counter = 0
     while len(open_set) > 0:
         if counter == 1000:
             grid_ = [list(row) for row in grid]
-            for (i, j), d, _ in open_set:
+            for _, ((i, j), d, _) in open_set:
                 grid_[i][j] = "^<v>"[d]
             print("\033[2J" + "\n".join("".join(row) for row in grid_), "\n", len(open_set))
             counter = 0
+            time.sleep(0.020)
         else:
             counter += 1
 
-        current = min(open_set, key=lambda c: -f_score[c])
-        open_set.remove(current)
+        cf, current = heappop(open_heap)
+        while (cf, current) in kill_set:
+            kill_set.remove(cf, current)
+            cf, current = heappop(open_heap)
+        open_set.remove((cf, current))
 
-        #open_set.sort(key=lambda c: -f_score[c])
-        if current[0] == end:
+        if current[0] == end and current[2] >= 4:
             path = reconstruct_path(came_from, current)
             grid = [list(row) for row in grid]
             for (i, j), d, _ in path:
                 grid[i][j] = "^<v>"[d]
+            print("\033[2J")
             for row in grid:
                 print("".join(row))
-            print(path)
             return [pos for pos, d, s in path][:-1]
-        #heappop(open_set)
 
         (i, j), d, s = current
 
@@ -70,6 +69,8 @@ def astar(grid, start, end):
         #if s < 3:
         #    dirs.append(d)
         dirs = []
+        if s == 0:
+            dirs = [3] # ugh
         if s >= 4:
             dirs = [(d-1)%4, (d+1)%4]
         if s < 10:
@@ -88,21 +89,30 @@ def astar(grid, start, end):
             if not ngs or gs < ngs:
                 came_from[neighbor] = current
                 g_score[neighbor] = gs
-                f_score[neighbor] = gs + dist(grid, (ni, nj), end)
+                nf = gs + dist(grid, (ni, nj), end)
+                of = f_score.get(neighbor)
+                if of and of != nf:
+                    open_set.remove((of, neighbor))
+                    kill_set.add((of, neighbor))
+                f_score[neighbor] = nf
                 found = False
-                if neighbor not in open_set:
-                    if ss+1 >= 4:
-                        for os in range(4, ss+1):
-                            if ((ni, nj), dd, os+1) in open_set:
-                                break
+                if (nf, neighbor) not in open_set:
+                    #if ss+1 >= 4:
+                    #    for os in range(4, ss+1):
+                    #        if ((ni, nj), dd, os+1) in open_set:
+                    #            break
+                    #    else:
+                    #        open_set.add(neighbor)
+                    #        for os in range(ss+1, 10):
+                    #            o = ((ni, nj), dd, os+1)
+                    #            if o in open_set:
+                    #                open_set.remove(o)
+                    #else:
+                        open_set.add((nf, neighbor))
+                        if (nf, neighbor) in kill_set:
+                            kill_set.remove((nf, neighbor))
                         else:
-                            open_set.add(neighbor)
-                            for os in range(ss+1, 10):
-                                o = ((ni, nj), dd, os+1)
-                                if o in open_set:
-                                    open_set.remove(o)
-                    else:
-                        open_set.add(neighbor)
+                            heappush(open_heap, (nf, neighbor))
                     #heappush(open_set, neighbor)
     return None
 
@@ -116,5 +126,6 @@ def run(input_file: str):
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
 run(f"{base}/inputs/sample-{today}.txt")
+run(f"{base}/inputs/sample-{today}-2.txt")
 run(f"{base}/inputs/input-{today}.txt")
 
