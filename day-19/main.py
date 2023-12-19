@@ -31,35 +31,43 @@ def cmp_op(s: str) -> typing.Callable[[int, int], bool]:
     match s:
         case "<": return lambda a, b: a < b
         case ">": return lambda a, b: a > b
+    raise Exception(f"comparison operator isn't < or >: {s}")
+
 def field_op(s: str) -> typing.Callable[[Part], int]:
     match s:
         case "x": return lambda p: p.x
         case "m": return lambda p: p.m
         case "a": return lambda p: p.a
         case "s": return lambda p: p.s
+    raise Exception(f"operand isn't x, m, a or s: {s}")
+
 def get_rule(s: str) -> tuple[Check, str]:
     check, _, dest = s.partition(":")
-    field, op, val = check[0], cmp_op(check[1]), int(check[2:])
-    field = field_op(field)
+    field, op, val = field_op(check[0]), cmp_op(check[1]), int(check[2:])
     return (lambda part: op(field(part), val), dest)
 
 def get_workflow(s: str) -> Workflow:
-    name, _, rules = s.partition("{")
-    rules = rules[:-1].split(",")
-    rules, fallback = list(map(get_rule, rules[:-1])), rules[-1]
+    name, _, rules_str = s.partition("{")
+    all_rules = rules_str[:-1].split(",")
+    rules, fallback = list(map(get_rule, all_rules[:-1])), all_rules[-1]
     return Workflow(name, rules, fallback)
 
-def get_rule2(s: str) -> tuple[Check, str]:
+Rule2 = tuple[int, str, int, str]
+
+def get_rule2(s: str) -> Rule2:
     check, _, dest = s.partition(":")
     field, op, val = "xmas".index(check[0]), check[1], int(check[2:])
     return (field, op, val, dest)
-def get_workflow2(s: str) -> Workflow:
-    name, _, rules = s.partition("{")
-    rules = rules[:-1].split(",")
-    rules, fallback = list(map(get_rule2, rules[:-1])), rules[-1]
+
+Workflow2 = tuple[str, list[Rule2], str]
+
+def get_workflow2(s: str) -> Workflow2:
+    name, _, rules_str = s.partition("{")
+    all_rules = rules_str[:-1].split(",")
+    rules, fallback = list(map(get_rule2, all_rules[:-1])), all_rules[-1]
     return (name, rules, fallback)
 
-def process(workflows: list[Workflow], part: Part) -> bool:
+def process(workflows: dict[str, Workflow], part: Part) -> bool:
     state = "in"
     while True:
         state = workflows[state](part)
@@ -67,7 +75,7 @@ def process(workflows: list[Workflow], part: Part) -> bool:
             case "A": return True
             case "R": return False
 
-def process2(workflows: list) -> int:
+def process2(workflows: dict[str, Workflow2]) -> int:
     accepted = []
     stack = [ ("in", [(1, 4000)] * 4) ]
     while len(stack) > 0:
@@ -126,13 +134,13 @@ def process2(workflows: list) -> int:
 
 def run(input_file: str):
     with open(input_file, "r", encoding="utf-8") as f:
-        workflows, parts = list(map(str.split, f.read().split("\n\n")))
-    parts = [Part(*map(int, re.findall(r"\d+", part))) for part in parts]
-    workflows_ = {w.name: w for w in map(get_workflow, workflows)}
-    print(sum(part.total() for part in parts if process(workflows_, part)))
+        workflows_str, parts_str = list(map(str.split, f.read().split("\n\n")))
+    parts = [Part(*map(int, re.findall(r"\d+", part))) for part in parts_str]
+    workflows1 = {w.name: w for w in map(get_workflow, workflows_str)}
+    print(sum(part.total() for part in parts if process(workflows1, part)))
 
-    workflows = {w[0]: w for w in map(get_workflow2, workflows)}
-    print(process2(workflows))
+    workflows2 = {w[0]: w for w in map(get_workflow2, workflows_str)}
+    print(process2(workflows2))
     
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
