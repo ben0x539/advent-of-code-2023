@@ -20,12 +20,12 @@ class Broadcaster(Module):
 
 @dataclass
 class FlipFlop(Module):
-    state: bool
+    state: int
 
     def pulse(self, src, v):
         if v == 1:
             return []
-        self.state = not self.state
+        self.state = 1 - self.state
         if self.state:
             return self.send(1)
         else:
@@ -70,7 +70,7 @@ def run(input_file: str):
             case "broadcaster":
                 m = Broadcaster(left, dests)
             case "%":
-                m = FlipFlop(left, dests, False)
+                m = FlipFlop(left, dests, 0)
             case "&":
                 m = Conjunction(left, dests, {})
         modules[left] = m
@@ -88,8 +88,10 @@ def run(input_file: str):
     i = 0
     hist = {}
     pulse_hist = []
+    max_len = 0
+    state_hist = []
     #while True:
-    for i in range(1000):
+    for i in range(100000):
         signals.append(("broadcaster", "button", 0))
         lo, hi = 0, 0
         #if i < 4:
@@ -139,8 +141,8 @@ def run(input_file: str):
         #   rk: 1024
         #   sb: 1841??
         # fv:
-        for name, mod in modules.items():
-            if type(mod) == Conjunction:
+        #for name, mod in modules.items():
+            #if type(mod) == Conjunction:
                 #if mod.is_set():
                 #    if cycles.get(name) is None:
                 #        cycles[name] = []
@@ -148,32 +150,43 @@ def run(input_file: str):
                 #    #print(name, i)
                 #vals.append(list(mod.state.values()))
 
-                for k, v in mod.state.items():
-                    n = f"{name}:{k}"
-                    if hist.get(n) is None:
-                        c = Counter(v, 1, [])
-                        hist[n] = c
-                    else:
-                        c = hist[n]
-                    if c.last_val == v:
-                        c.unchanged_for += 1
-                    else:
-                        c.last_val = v
-                        c.change_at.append((i, c.unchanged_for))
-                        c.unchanged_for = 1
+                #for k, v in mod.state.items():
+                #    n = f"{name}:{k}"
+                #    if hist.get(n) is None:
+                #        c = Counter(v, 1, [])
+                #        hist[n] = c
+                #    else:
+                #        c = hist[n]
+                #    if c.last_val == v:
+                #        c.unchanged_for += 1
+                #    else:
+                #        c.last_val = v
+                #        c.change_at.append((i, c.unchanged_for))
+                #        c.unchanged_for = 1
                 #vals.append(name+":"+"".join(map(str, mod.state.values())))
                 #print(i, name, mod.state)
-        i += 1
         #print(i, vals)
-    for h in pulse_hist[:1000]:
-        print("".join(map(str, h)))
+        sh = []
+        state_hist.append(sh)
+        for m in modules.values():
+            if type(m) == FlipFlop:
+                sh.append(m.state)
+            elif type(m) == Conjunction:
+                sh.extend(m.state.values())
+        if len(ph) >= max_len:
+            max_len = len(ph)
+        #print("".join(map(str, ph)))
+        print("".join(map(str, sh)))
+        i += 1
+    #for h in pulse_hist[:1000]:
+    #    print("".join(map(str, h)))
     #for k, v in cycles.items():
     #    print(k, v[:20])
     print(lo_total, hi_total, lo_total*hi_total)
     print(n)
     print("")
-    for n, c in hist.items():
-        print(n, c.change_at[:20])
+    #for n, c in hist.items():
+    #    print(n, c.change_at[:20])
         
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
 #run(f"{base}/inputs/sample-{today}.txt")
