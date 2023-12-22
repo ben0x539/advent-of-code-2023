@@ -73,7 +73,9 @@ class Brick:
 
 class Bricks:
     def __init__(self, bricks):
-        self.bricks = [Brick(n, ends) for n, ends in zip(range(99999), bricks)]
+        sorted_bricks = list(bricks)
+        sorted_bricks.sort(key=lambda b: b[0][2])
+        self.bricks = [Brick(n, ends) for n, ends in enumerate(sorted_bricks)]
         w, d, h = 0, 0, 0
         for brick in self.bricks:
             #print("brick", brick.label(), brick)
