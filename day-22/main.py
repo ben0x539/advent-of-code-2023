@@ -1,4 +1,5 @@
 import os
+import copy
 from dataclasses import dataclass
 
 vecs = [
@@ -86,12 +87,17 @@ class Bricks:
                 self.grid[z][y][x] = brick
 
     def drop(self):
+        dropped = set()
         while True:
             anything_changed = False
             for brick in self.bricks:
                 try:
                     #print("checking to drop", brick.label(), brick)
+                    dropped_this_one = False
                     while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
+                        if not dropped_this_one:
+                            dropped.add(brick)
+                            dropped_this_one = True
                         #print("  has room below")
                         anything_changed = True
                         for x, y, z in brick.range():
@@ -104,6 +110,7 @@ class Bricks:
                     raise
             if not anything_changed:
                 break
+        return dropped
 
     def get_supported(self, brick):
         supported = set()
@@ -125,6 +132,15 @@ class Bricks:
                 supporting.add(b)
         return supporting
 
+    def zap(self, i):
+        brick = self.bricks[i]
+        for x, y, z in brick.range():
+            self.grid[z][y][x] = None
+        self.bricks[i] = self.bricks[-1]
+        self.bricks.pop()
+        return brick
+
+
     def print(self):
         for z in range(len(self.grid)):
             z = len(self.grid) - z - 1
@@ -136,6 +152,7 @@ class Bricks:
 
 
 def run(input_file: str):
+    print(input_file)
     with open(input_file, "r", encoding="utf-8") as f:
         bricks = Bricks(tuple((tuple(map(int, b.split(","))) for b in s.strip().split("~"))) for s in f.readlines())
     #bricks.print()
@@ -151,6 +168,15 @@ def run(input_file: str):
         #else:
             #print("don't disintegrate", brick.label(), list(map(Brick.label, supports)))
     print(disintegratable)
+
+    total = 0
+    for i in range(len(bricks.bricks)):
+        bricks_ = copy.deepcopy(bricks)
+        brick = bricks_.zap(i)
+        dropped = bricks_.drop()
+        total += len(dropped)
+        print(f"zapped {brick.label()}, {len(dropped)} dropped")
+    print(total)
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
 run(f"{base}/inputs/sample-{today}.txt")
