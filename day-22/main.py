@@ -95,23 +95,17 @@ class Bricks:
         while True:
             anything_changed = False
             for brick in self.bricks:
-                try:
-                    #print("checking to drop", brick.label(), brick)
-                    dropped_this_one = False
-                    while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
-                        if not dropped_this_one:
-                            dropped.add(brick.id)
-                            dropped_this_one = True
-                        #print("  has room below")
-                        anything_changed = True
-                        for x, y, z in brick.range():
-                            self.grid[z][y][x] = None
-                        brick.move(0, 0, -1)
-                        for x, y, z in brick.range():
-                            self.grid[z][y][x] = brick
-                except Exception as e:
-                    print("rip brick", brick)
-                    raise
+                dropped_this_one = False
+                while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
+                    if not dropped_this_one:
+                        dropped.add(brick.id)
+                        dropped_this_one = True
+                    anything_changed = True
+                    for x, y, z in brick.range():
+                        self.grid[z][y][x] = None
+                    brick.move(0, 0, -1)
+                    for x, y, z in brick.range():
+                        self.grid[z][y][x] = brick
             if not anything_changed:
                 break
         return dropped
