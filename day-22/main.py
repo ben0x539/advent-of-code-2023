@@ -1,6 +1,8 @@
 import os
 import copy
+from collections import deque
 from dataclasses import dataclass
+import cProfile
 
 vecs = [
     ( 0, -1),
@@ -112,42 +114,33 @@ class Bricks:
                 break
         return dropped
 
-    def drop_from(self, changed):
-        dropped = set()
+    def drop_from(self, zapped):
         anything_changed = False
-        relevant = [self.bricks[i] for i in self.get_supported(changed)]
-        while len(relevant) > 0:
-            brick = relevant.pop()
-            try:
-                #print("checking to drop", brick.label(), brick)
-                dropped_this_one = False
-                while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
-                    if not dropped_this_one:
-                        for b in self.get_supported(brick):
-                            relevant.append(self.bricks[b])
-                        dropped.add(brick.id)
-                        dropped_this_one = True
-                        for x, y, z in brick.range():
-                            self.grid[z][y][x] = None
-                    #print("  has room below")
-                    brick.move(0, 0, -1)
-                if dropped_this_one:
-                    for x, y, z in brick.range():
-                        self.grid[z][y][x] = brick.id
-            except Exception as e:
-                print("rip brick", brick)
-                raise
-        return dropped
+        dropped = set([zapped.id, None])
+
+        relevant = [self.bricks[i] for i in self.get_supported(zapped)]
+        i = 0
+        while i < len(relevant):
+            brick = relevant[i]
+            for x, y, z in brick.below():
+                if not self.grid[z][y][x] in dropped:
+                    break
+            else:
+                for b in self.get_supported(brick):
+                    relevant.append(self.bricks[b])
+                dropped.add(brick.id)
+            i += 1
+        return len(dropped) - 2
 
     def get_supported(self, brick):
-        supported = set()
+        found = []
         for x, y, z in brick.above():
             if z >= len(self.grid)-1:
                 break
             b = self.grid[z][y][x]
-            if b is not None:
-                supported.add(b)
-        return supported
+            if b is not None and not b in found:
+                found.append(b)
+                yield b
 
     def get_supporting(self, brick):
         supporting = set()
@@ -200,17 +193,14 @@ def run(input_file: str):
     print(disintegratable)
 
     total = 0
-    bricks_ = bricks.copy()
     for brick in bricks.bricks.values():
-        bricks_.zap(brick)
-        dropped = bricks_.drop_from(brick)
-        #dropped = bricks_.drop()
-        if len(dropped) > 0:
-            bricks_ = bricks.copy()
-        total += len(dropped)
-        print(f"zapped {brick.label()}, {len(dropped)} dropped")
+        dropped = bricks.drop_from(brick)
+        total += dropped
+        print(f"zapped {brick.label()}, {dropped} dropped")
     print(total)
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
+#cProfile.run('run(f"{base}/inputs/sample-{today}.txt")')
+#cProfile.run('run(f"{base}/inputs/input-{today}.txt")')
 run(f"{base}/inputs/sample-{today}.txt")
 run(f"{base}/inputs/input-{today}.txt")
