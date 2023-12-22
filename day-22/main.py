@@ -1,24 +1,5 @@
 import os
-import copy
-from collections import deque
 from dataclasses import dataclass
-import cProfile
-
-vecs = [
-    ( 0, -1),
-    (-1,  0),
-    ( 0,  1),
-    ( 1,  0),
-]
-
-@dataclass
-class XYZRange:
-    ends: tuple[tuple[int, int, int], tuple[int, int, int]]
-    def __next__(sef):
-        cur = self.ends[0]
-        self.ends = (tuple(map(lambda x: x+1, ends[0]), ends[1]))
-        return cur
-
 
 @dataclass
 class Brick:
@@ -150,17 +131,6 @@ class Bricks:
                 found.add(b)
         return found
 
-    #def zap(self, brick):
-    #    for x, y, z in brick.range():
-    #        self.grid[z][y][x] = None
-    #    del self.bricks[brick.id]
-    #    return brick
-
-    def copy(self):
-        other = Bricks(())
-        other.bricks = self.bricks.copy()
-        other.grid = self.grid.copy()
-        return other
 
     #def print(self):
     #    for z in range(len(self.grid)):
@@ -198,7 +168,5 @@ def run(input_file: str):
     print(total)
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
-#cProfile.run('run(f"{base}/inputs/sample-{today}.txt")')
-#cProfile.run('run(f"{base}/inputs/input-{today}.txt")', sort="cumulative")
 run(f"{base}/inputs/sample-{today}.txt")
 run(f"{base}/inputs/input-{today}.txt")
