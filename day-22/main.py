@@ -71,9 +71,9 @@ class Brick:
 
 class Bricks:
     def __init__(self, bricks):
-        self.bricks = [Brick(n, ends) for n, ends in zip(range(99999), bricks)]
+        self.bricks = {n: Brick(n, ends) for n, ends in zip(range(99999), bricks)}
         w, d, h = 0, 0, 0
-        for brick in self.bricks:
+        for brick in self.bricks.values():
             #print("brick", brick.label(), brick)
             if brick.is_backwards():
                 print("backwards:", brick)
@@ -81,22 +81,22 @@ class Bricks:
                 w, d, h = max(x, w), max(y, d), max(z, h)
         w, d, h = w+1, d+1, h+1
         self.grid = [[[None for _ in range(w)] for _ in range(d)] for _ in range(h)]
-        for brick in self.bricks:
+        for brick in self.bricks.values():
             for x, y, z in brick.range():
                 #print("brick", brick.label(), brick, x, y, z)
-                self.grid[z][y][x] = brick
+                self.grid[z][y][x] = brick.id
 
     def drop(self):
         dropped = set()
         while True:
             anything_changed = False
-            for brick in self.bricks:
+            for brick in self.bricks.values():
                 try:
                     #print("checking to drop", brick.label(), brick)
                     dropped_this_one = False
                     while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
                         if not dropped_this_one:
-                            dropped.add(brick)
+                            dropped.add(brick.id)
                             dropped_this_one = True
                         #print("  has room below")
                         anything_changed = True
@@ -104,12 +104,39 @@ class Bricks:
                             self.grid[z][y][x] = None
                         brick.move(0, 0, -1)
                         for x, y, z in brick.range():
-                            self.grid[z][y][x] = brick
+                            self.grid[z][y][x] = brick.id
                 except Exception as e:
                     print("rip brick", brick)
                     raise
             if not anything_changed:
                 break
+        return dropped
+
+    def drop_from(self, changed):
+        dropped = set()
+        anything_changed = False
+        relevant = [self.bricks[i] for i in self.get_supported(changed)]
+        while len(relevant) > 0:
+            brick = relevant.pop()
+            try:
+                #print("checking to drop", brick.label(), brick)
+                dropped_this_one = False
+                while brick.bottom() > 1 and all(self.grid[z][y][x] == None for x, y, z in brick.below()):
+                    if not dropped_this_one:
+                        for b in self.get_supported(brick):
+                            relevant.append(self.bricks[b])
+                        dropped.add(brick.id)
+                        dropped_this_one = True
+                        for x, y, z in brick.range():
+                            self.grid[z][y][x] = None
+                    #print("  has room below")
+                    brick.move(0, 0, -1)
+                if dropped_this_one:
+                    for x, y, z in brick.range():
+                        self.grid[z][y][x] = brick.id
+            except Exception as e:
+                print("rip brick", brick)
+                raise
         return dropped
 
     def get_supported(self, brick):
@@ -132,23 +159,26 @@ class Bricks:
                 supporting.add(b)
         return supporting
 
-    def zap(self, i):
-        brick = self.bricks[i]
+    def zap(self, brick):
         for x, y, z in brick.range():
             self.grid[z][y][x] = None
-        self.bricks[i] = self.bricks[-1]
-        self.bricks.pop()
+        del self.bricks[brick.id]
         return brick
 
+    def copy(self):
+        other = Bricks(())
+        other.bricks = self.bricks.copy()
+        other.grid = self.grid.copy()
+        return other
 
-    def print(self):
-        for z in range(len(self.grid)):
-            z = len(self.grid) - z - 1
-            level = self.grid[z]
-            print("z =", z)
-            for row in level:
-                print(" ".join((".." if brick is None else brick.label()) for brick in row))
-            print("")
+    #def print(self):
+    #    for z in range(len(self.grid)):
+    #        z = len(self.grid) - z - 1
+    #        level = self.grid[z]
+    #        print("z =", z)
+    #        for row in level:
+    #            print(" ".join((".." if brick is None else brick.label()) for brick in row))
+    #        print("")
 
 
 def run(input_file: str):
@@ -160,9 +190,9 @@ def run(input_file: str):
     #print("")
     #bricks.print()
     disintegratable = 0
-    for brick in bricks.bricks:
+    for brick in bricks.bricks.values():
         supports = bricks.get_supported(brick)
-        if all(len(bricks.get_supporting(b)) > 1 for b in supports):
+        if all(len(bricks.get_supporting(bricks.bricks[b])) > 1 for b in supports):
             #print("disintegrate", brick.label())
             disintegratable += 1
         #else:
@@ -170,10 +200,13 @@ def run(input_file: str):
     print(disintegratable)
 
     total = 0
-    for i in range(len(bricks.bricks)):
-        bricks_ = copy.deepcopy(bricks)
-        brick = bricks_.zap(i)
-        dropped = bricks_.drop()
+    bricks_ = bricks.copy()
+    for brick in bricks.bricks.values():
+        bricks_.zap(brick)
+        dropped = bricks_.drop_from(brick)
+        #dropped = bricks_.drop()
+        if len(dropped) > 0:
+            bricks_ = bricks.copy()
         total += len(dropped)
         print(f"zapped {brick.label()}, {len(dropped)} dropped")
     print(total)
