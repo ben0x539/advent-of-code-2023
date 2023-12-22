@@ -73,9 +73,9 @@ class Brick:
 
 class Bricks:
     def __init__(self, bricks):
-        self.bricks = {n: Brick(n, ends) for n, ends in zip(range(99999), bricks)}
+        self.bricks = [Brick(n, ends) for n, ends in zip(range(99999), bricks)]
         w, d, h = 0, 0, 0
-        for brick in self.bricks.values():
+        for brick in self.bricks:
             #print("brick", brick.label(), brick)
             if brick.is_backwards():
                 print("backwards:", brick)
@@ -83,16 +83,16 @@ class Bricks:
                 w, d, h = max(x, w), max(y, d), max(z, h)
         w, d, h = w+1, d+1, h+1
         self.grid = [[[None for _ in range(w)] for _ in range(d)] for _ in range(h)]
-        for brick in self.bricks.values():
+        for brick in self.bricks:
             for x, y, z in brick.range():
                 #print("brick", brick.label(), brick, x, y, z)
-                self.grid[z][y][x] = brick.id
+                self.grid[z][y][x] = brick
 
     def drop(self):
         dropped = set()
         while True:
             anything_changed = False
-            for brick in self.bricks.values():
+            for brick in self.bricks:
                 try:
                     #print("checking to drop", brick.label(), brick)
                     dropped_this_one = False
@@ -106,7 +106,7 @@ class Bricks:
                             self.grid[z][y][x] = None
                         brick.move(0, 0, -1)
                         for x, y, z in brick.range():
-                            self.grid[z][y][x] = brick.id
+                            self.grid[z][y][x] = brick
                 except Exception as e:
                     print("rip brick", brick)
                     raise
@@ -115,48 +115,50 @@ class Bricks:
         return dropped
 
     def drop_from(self, zapped):
-        anything_changed = False
-        dropped = set([zapped.id, None])
+        gone = set([None, zapped])
 
-        relevant = [self.bricks[i] for i in self.get_supported(zapped)]
+        relevant = list(self.get_supported(zapped))
         i = 0
         while i < len(relevant):
             brick = relevant[i]
-            for x, y, z in brick.below():
-                if not self.grid[z][y][x] in dropped:
+            i += 1
+            if brick in gone:
+                continue
+            for b in self.get_supporting(brick):
+                if b not in gone:
                     break
             else:
                 for b in self.get_supported(brick):
-                    relevant.append(self.bricks[b])
-                dropped.add(brick.id)
-            i += 1
-        return len(dropped) - 2
+                    if b not in gone:
+                        relevant.append(b)
+                gone.add(brick)
+        return len(gone) - 2
 
     def get_supported(self, brick):
-        found = []
+        found = set()
         for x, y, z in brick.above():
             if z >= len(self.grid)-1:
                 break
             b = self.grid[z][y][x]
-            if b is not None and not b in found:
-                found.append(b)
-                yield b
+            if b is not None:
+                found.add(b)
+        return found
 
     def get_supporting(self, brick):
-        supporting = set()
+        found = set()
         for x, y, z in brick.below():
             if z <= 0:
                 break
             b = self.grid[z][y][x]
             if b is not None:
-                supporting.add(b)
-        return supporting
+                found.add(b)
+        return found
 
-    def zap(self, brick):
-        for x, y, z in brick.range():
-            self.grid[z][y][x] = None
-        del self.bricks[brick.id]
-        return brick
+    #def zap(self, brick):
+    #    for x, y, z in brick.range():
+    #        self.grid[z][y][x] = None
+    #    del self.bricks[brick.id]
+    #    return brick
 
     def copy(self):
         other = Bricks(())
@@ -183,9 +185,9 @@ def run(input_file: str):
     #print("")
     #bricks.print()
     disintegratable = 0
-    for brick in bricks.bricks.values():
+    for brick in bricks.bricks:
         supports = bricks.get_supported(brick)
-        if all(len(bricks.get_supporting(bricks.bricks[b])) > 1 for b in supports):
+        if all(sum(1 for b in bricks.get_supporting(b)) > 1 for b in supports):
             #print("disintegrate", brick.label())
             disintegratable += 1
         #else:
@@ -193,7 +195,7 @@ def run(input_file: str):
     print(disintegratable)
 
     total = 0
-    for brick in bricks.bricks.values():
+    for brick in bricks.bricks:
         dropped = bricks.drop_from(brick)
         total += dropped
         print(f"zapped {brick.label()}, {dropped} dropped")
@@ -201,6 +203,6 @@ def run(input_file: str):
 
 base, _, today = os.path.dirname(os.path.realpath(__file__)).rpartition('/')
 #cProfile.run('run(f"{base}/inputs/sample-{today}.txt")')
-#cProfile.run('run(f"{base}/inputs/input-{today}.txt")')
+#cProfile.run('run(f"{base}/inputs/input-{today}.txt")', sort="cumulative")
 run(f"{base}/inputs/sample-{today}.txt")
 run(f"{base}/inputs/input-{today}.txt")
